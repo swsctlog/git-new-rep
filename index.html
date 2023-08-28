@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Заметки</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <style>
+    .container {
+      margin-top: 20px;
+    }
+    .admin-button {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+    }
+    .admin-panel {
+      display: none;
+    }
+    .footer {
+      margin-top: 50px;
+      text-align: center;
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+    }
+    .error {
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Летописи дракона</h1>
+    <button id="admin-button" class="btn btn-secondary admin-button">Вход в административный режим</button>
+    <div id="notes-container"></div>
+    <form id="note-form" class="admin-panel">
+      <div class="form-group">
+        <textarea class="form-control" id="note-text" rows="3" placeholder="Введите заметку"></textarea>
+        <small id="note-error" class="form-text error"></small>
+      </div>
+      <input type="hidden" id="note-index">
+      <button type="submit" class="btn btn-primary">Сохранить</button>
+      <button id="cancel-button" class="btn btn-secondary">Отмена</button>
+    </form>
+  </div>
+
+  <div class="footer">
+    <p style="font-size: 20px;">Сайт находится в разработке</p>
+    <p>Скоро будут добавлены новые функции!</p>
+    <p>Если вы обычный пользователь, вы можете просматривать заметки.</p>
+    <p>Если у вас есть пароль администратора, вы можете добавлять новые заметки и редактировать или удалять существующие.</p>
+  </div>
+
+  <script>
+    // Загрузка заметок из localStorage при загрузке страницы
+    let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+    // Пароль для входа
+    const adminPassword = 'password';
+
+    // Функция добавления заметки
+    function addNote() {
+      const noteText = document.getElementById('note-text').value;
+      if (noteText.trim() !== '') {
+        notes.push(noteText);
+        document.getElementById('note-form').reset();
+        saveNotes();
+        renderNotes();
+      } else {
+        document.getElementById('note-error').innerText = 'Пожалуйста, введите текст заметки.';
+      }
+    }
+
+    // Функция удаления заметки
+    function deleteNote(index) {
+      notes.splice(index, 1);
+      saveNotes();
+      renderNotes();
+    }
+
+    // Функция редактирования заметки
+    function editNote() {
+      const noteText = document.getElementById('note-text').value;
+      const noteIndex = document.getElementById('note-index').value;
+      if (noteText.trim() !== '') {
+        notes[noteIndex] = noteText;
+        document.getElementById('note-form').reset();
+        exitEditMode();
+        saveNotes();
+        renderNotes();
+      } else {
+        document.getElementById('note-error').innerText = 'Пожалуйста, введите текст заметки.';
+      }
+    }
+
+    // Функция сохранения заметок в localStorage
+    function saveNotes() {
+      localStorage.setItem('notes', JSON.stringify(notes));
+    }
+
+    // Функция отображения заметок
+    function renderNotes() {
+      const notesContainer = document.getElementById('notes-container');
+      notesContainer.innerHTML = '';
+      notes.forEach(function(note, index) {
+        const noteElement = document.createElement('div');
+        noteElement.className = 'alert alert-info';
+        noteElement.innerText = note;
+        
+        // Добавление кнопок удаления и редактирования только в административном режиме
+        if (isAdminMode()) {
+          const deleteButton = document.createElement('button');
+          deleteButton.className ='btn btn-danger btn-sm';
+          deleteButton.innerText = 'Удалить';
+          deleteButton.addEventListener('click',function(event) {
+  deleteNote(index);
+});
+noteElement.appendChild(deleteButton);
+
+const editButton = document.createElement('button');
+editButton.className = 'btn btn-primary btn-sm';
+editButton.innerText = 'Редактировать';
+editButton.addEventListener('click', function(event) {
+  enterEditMode(index);
+});
+noteElement.appendChild(editButton);
+}
+
+notesContainer.appendChild(noteElement);
+});
+}
+
+// Функция перехода в административный режим
+function enterAdminMode() {
+const adminButton = document.getElementById('admin-button');
+adminButton.style.display = 'none';
+const adminPanel = document.getElementsByClassName('admin-panel');
+adminPanel[0].style.display = 'block';
+}
+
+// Функция выхода из административного режима
+function exitAdminMode() {
+const adminButton = document.getElementById('admin-button');
+adminButton.style.display = 'block';
+const adminPanel = document.getElementsByClassName('admin-panel');
+adminPanel[0].style.display = 'none';
+}
+
+// Функция проверки, находится ли приложение в административном режиме
+function isAdminMode() {
+const adminPanel = document.getElementsByClassName('admin-panel');
+return adminPanel[0].style.display === 'block';
+}
+
+// Функция входа в режим редактирования заметки
+function enterEditMode(index) {
+const noteForm = document.getElementById('note-form');
+const cancelButton = document.getElementById('cancel-button');
+noteForm.style.display = 'block';
+cancelButton.style.display = 'inline-block';
+document.getElementById('note-text').value = notes[index];
+document.getElementById('note-index').value = index;
+}
+
+// Функция выхода из режима редактирования заметки
+function exitEditMode() {
+const noteForm = document.getElementById('note-form');
+const cancelButton = document.getElementById('cancel-button');
+noteForm.reset();
+noteForm.style.display = 'none';
+cancelButton.style.display = 'none';
+}
+
+// Обработчик события отправки формы
+document.getElementById('note-form').addEventListener('submit', function(event) {
+event.preventDefault();
+if (document.getElementById('note-index').value !== '') {
+  editNote();
+} else {
+  addNote();
+}
+});
+
+// Обработчик события клика по кнопке "Отмена"
+document.getElementById('cancel-button').addEventListener('click', function(event) {
+event.preventDefault();
+exitEditMode();
+});
+
+// Обработчик события клика по кнопке "Вход в административный режим"
+document.getElementById('admin-button').addEventListener('click', function(event) {
+event.preventDefault();
+const password = prompt('Введите пароль для входа в административный режим:');
+if (password === adminPassword) {
+  enterAdminMode();
+} else {
+  alert('Неверный пароль!');
+}
+});
+
+// Загрузка заметок при загрузке страницы
+renderNotes();
+</script>
+</body>
+</html>
